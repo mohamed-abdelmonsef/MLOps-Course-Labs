@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/dell/Downloads/ML_OPS/lab1/MLOps-Course-Labs/mlruns/974244038211014797/e00888198ef3489e82c4e1632314505b/artifacts
+end_time: 1747645263914
+entry_point_name: ''
+experiment_id: '974244038211014797'
+lifecycle_stage: active
+run_id: e00888198ef3489e82c4e1632314505b
+run_name: API_Prediction
+run_uuid: e00888198ef3489e82c4e1632314505b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1747645263806
+status: 3
+tags: []
+user_id: dell
