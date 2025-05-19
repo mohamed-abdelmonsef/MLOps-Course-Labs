@@ -1,0 +1,1 @@
+{'CreditScore': 0, 'Geography': 'string', 'Gender': 'string', 'Age': 0, 'Tenure': 0, 'Balance': 0.0, 'NumOfProducts': 0, 'HasCrCard': 0, 'IsActiveMember': 0, 'EstimatedSalary': 0.0}

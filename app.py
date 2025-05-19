@@ -6,6 +6,7 @@ import pandas as pd
 from pathlib import Path
 import mlflow
 from mlflow.tracking import MlflowClient
+from pydantic import BaseModel
 
 
 # Setup logging
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Bank Churn Prediction API")
 
-BASE_DIR = Path(r"C:\Users\dell\Downloads\ML_OPS\lab1\MLOps-Course-Labs\mlruns\models")
+BASE_DIR = Path(__file__).resolve().parent / "mlruns" / "models"
 model_path = BASE_DIR / "SVC_classifier.pkl"
 transformer_path = BASE_DIR / "transformer.pkl"
 
@@ -47,13 +48,43 @@ async def health():
     logger.info("Accessed health endpoint")
     return {"status": "healthy"}
 
-# Predict endpoint for raw data
+
+# Pydantic model for the predict endpoint input
+class PredictionInput(BaseModel):
+    CreditScore: int
+    Geography: str
+    Gender: str
+    Age: int
+    Tenure: int
+    Balance: float
+    NumOfProducts: int
+    HasCrCard: int
+    IsActiveMember: int
+    EstimatedSalary: float
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "CreditScore": 600,
+                "Geography": "France",
+                "Gender": "Male",
+                "Age": 40,
+                "Tenure": 3,
+                "Balance": 50000,
+                "NumOfProducts": 2,
+                "HasCrCard": 1,
+                "IsActiveMember": 1,
+                "EstimatedSalary": 50000
+            }
+        }
+
+# Predict endpoint with Pydantic model
 @app.post("/predict")
-async def predict(data: dict):
-    logger.info(f"Received prediction request with data: {data}")
+async def predict(data: PredictionInput):
+    logger.info(f"Received prediction request with data: {data.dict()}")
     try:
         # Convert input data to DataFrame
-        df = pd.DataFrame([data])
+        df = pd.DataFrame([data.dict()])
         required_cols = ["CreditScore", "Geography", "Gender", "Age", "Tenure", "Balance", 
                         "NumOfProducts", "HasCrCard", "IsActiveMember", "EstimatedSalary"]
         if not all(col in df.columns for col in required_cols):
@@ -71,7 +102,7 @@ async def predict(data: dict):
 
         # Log to MLflow
         with mlflow.start_run(experiment_id=experiment_id, run_name="API_Prediction"):
-            mlflow.log_param("input_data", str(data))
+            mlflow.log_param("input_data", str(data.dict()))
             mlflow.log_metric("prediction_probability", float(probability))
 
         return JSONResponse({
