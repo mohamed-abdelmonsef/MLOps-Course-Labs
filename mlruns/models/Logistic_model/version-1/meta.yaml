@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1747640047665
+current_stage: Staging
+description: ''
+last_updated_timestamp: 1747640374636
+name: Logistic_model
+run_id: 7cc0763797b6422ea1efc623c975e9ae
+run_link: ''
+source: mlflow-artifacts:/580678026050037536/7cc0763797b6422ea1efc623c975e9ae/artifacts/LogisticRegression
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/580678026050037536/7cc0763797b6422ea1efc623c975e9ae/artifacts/LogisticRegression
+user_id: null
+version: 1

@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1747640167128
+current_stage: Production
+description: ''
+last_updated_timestamp: 1747640459579
+name: SVC_model
+run_id: 684c4400823543588c0fd3f9b25a98b1
+run_link: ''
+source: mlflow-artifacts:/580678026050037536/684c4400823543588c0fd3f9b25a98b1/artifacts/SVC_classifier
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/580678026050037536/684c4400823543588c0fd3f9b25a98b1/artifacts/SVC_classifier
+user_id: null
+version: 1
