@@ -15,8 +15,11 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(title="Bank Churn Prediction API")
+# Middleware for logging requests
+instrumentator.instrument(app).expose(app, include_in_schema=False, should_gzip=True)
 
-BASE_DIR = Path(__file__).resolve().parent / "mlruns" / "models"
+# Load the trained model and transformer
+BASE_DIR = Path(__file__).resolve().parent / "models"
 model_path = BASE_DIR / "SVC_classifier.pkl"
 transformer_path = BASE_DIR / "transformer.pkl"
 
@@ -84,7 +87,7 @@ async def predict(data: PredictionInput):
     logger.info(f"Received prediction request with data: {data.dict()}")
     try:
         # Convert input data to DataFrame
-        df = pd.DataFrame([data.dict()])
+        df = pd.DataFrame([data.model_dump()])
         required_cols = ["CreditScore", "Geography", "Gender", "Age", "Tenure", "Balance", 
                         "NumOfProducts", "HasCrCard", "IsActiveMember", "EstimatedSalary"]
         if not all(col in df.columns for col in required_cols):
