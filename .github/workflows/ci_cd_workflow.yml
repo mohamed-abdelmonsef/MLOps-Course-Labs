@@ -57,6 +57,9 @@ jobs:
   build-and-push-ecr:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -68,7 +71,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-east-1 
 
       # Log in to Amazon ECR
       - name: Log in to Amazon ECR
@@ -80,7 +83,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: churn-prediction
-          IMAGE_TAG: monsef_992 
+          IMAGE_TAG: monsef_992
         run: |
           cd app
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
