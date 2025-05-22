@@ -1,3 +1,4 @@
+
 name: CI/CD Pipeline for Bank Churn Prediction API
 
 on:
@@ -95,24 +96,37 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: churn-prediction
           IMAGE_TAG: monsef_992
-          REPO_URL: https://github.com/monsef992/churn-prediction.git # Replace with your actual repo URL
+          REPO_URL: https://github.com/mohamed-abdelmonsef/MLOps-Course-Labs.git
         run: |
           echo "$EC2_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $EC2_USER@$EC2_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $EC2_USER@$EC2_HOST << EOF
             # Install dependencies
             sudo apt-get update
-            sudo apt-get install -y git docker.io docker-compose awscli
+            sudo apt-get install -y git docker.io docker-compose unzip
+            # Install AWS CLI
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip -q awscliv2.zip
+            sudo ./aws/install
+            rm -rf aws awscliv2.zip
+            # Configure AWS credentials
+            mkdir -p ~/.aws
+            echo "[default]" > ~/.aws/credentials
+            echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+            echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+            echo "[default]" > ~/.aws/config
+            echo "region = us-east-1" >> ~/.aws/config
             # Log in to ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
-            # Clone the repository
+            # Clone the repository and checkout ci-cd-pipeline branch
             git clone $REPO_URL monsef-repo || { echo "Failed to clone repository"; exit 1; }
             cd monsef-repo
+            git checkout ci-cd-pipeline || { echo "Failed to checkout ci-cd-pipeline branch"; exit 1; }
             # Pull the latest image from ECR
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || { echo "Failed to pull ECR image"; exit 1; }
             # Stop and remove existing containers
             docker-compose down || true
             # Start the containers using the existing docker-compose.yml
-            docker-compose up -d
+            docker-compose up -d || { echo "Failed to start containers"; exit 1; }
           EOF
           rm private_key.pem
