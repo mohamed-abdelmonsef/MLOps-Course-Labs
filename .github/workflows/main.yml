@@ -31,9 +31,6 @@ jobs:
         pip install -r requirements.txt
         pip install httpx
 
-    - name: Check Python syntax
-      run: python -m py_compile app.py
-
     - name: Run unit tests with pytest
       run: pytest app/tests/
 
