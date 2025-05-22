@@ -1,3 +1,4 @@
+
 name: CI/CD Pipeline for Bank Churn Prediction API
 
 on:
@@ -8,11 +9,6 @@ on:
     branches:
       - ci-cd-pipeline
 
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: churn-prediction
-  IMAGE_TAG: hesham0955
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -22,32 +18,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
       - name: Install dependencies
         run: |
           cd app
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install httpx pytest pytest-cov flake8
-      - name: Check Python syntax
-        run: |
-          cd app
-          python -m py_compile app.py
+          pip install pytest pytest-cov flake8
       - name: Run unit tests
         run: |
           cd app
-          pytest tests/ --cov=./ --cov-report=xml
+          pytest --cov=./ --cov-report=xml
         env:
           METRICS_NAMESPACE: fastapi
           METRICS_SUBSYSTEM: model
           ENABLE_METRICS: true
-      - name: Health check (basic)
-        run: |
-          cd app
-          uvicorn app:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          curl --fail http://localhost:8000/health || exit 1
-          pkill -f "uvicorn"
 
   build-image:
     runs-on: ubuntu-latest
@@ -59,7 +44,7 @@ jobs:
       - name: Build API image
         run: |
           cd app
-          docker build -t bank-churn-api:hesham0955 .
+          docker build -t bank-churn-api:monsef992 .
 
   build-and-push-ecr:
     runs-on: ubuntu-latest
@@ -73,13 +58,15 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
       - name: Build and push Docker image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: churn-prediction
+          IMAGE_TAG: monsef_992
         run: |
           cd app
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -97,7 +84,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -107,7 +94,9 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPO_URL: https://github.com/HeshamEL-Shreif/MLOps-Course-Labs.git
+          ECR_REPOSITORY: churn-prediction
+          IMAGE_TAG: monsef_992
+          REPO_URL: https://github.com/mohamed-abdelmonsef/MLOps-Course-Labs.git
         run: |
           echo "$EC2_KEY" > private_key.pem
           chmod 600 private_key.pem
@@ -115,13 +104,10 @@ jobs:
             # Install dependencies
             sudo apt-get update
             sudo apt-get install -y git docker.io docker-compose unzip
-            # Resolve containerd conflict
-            sudo apt-get remove -y containerd || true
-            sudo apt-get install -y containerd.io
             # Install AWS CLI
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip -q awscliv2.zip
-            sudo ./aws/install --update
+            sudo ./aws/install
             rm -rf aws awscliv2.zip
             # Configure AWS credentials
             mkdir -p ~/.aws
@@ -129,28 +115,18 @@ jobs:
             echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
             echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
             echo "[default]" > ~/.aws/config
-            echo "region = ${{ env.AWS_REGION }}" >> ~/.aws/config
+            echo "region = us-east-1" >> ~/.aws/config
             # Log in to ECR
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY
-            # Clone or update the repository
-            mkdir -p hesham
-            cd hesham
-            if [ ! -d "MLOps-Course-Labs" ]; then
-              git clone $REPO_URL MLOps-Course-Labs || { echo "Failed to clone repository"; exit 1; }
-            else
-              cd MLOps-Course-Labs && git pull || { echo "Failed to pull repository"; exit 1; }
-            fi
-            cd MLOps-Course-Labs
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+            # Clone the repository and checkout ci-cd-pipeline branch
+            git clone $REPO_URL monsef-repo || { echo "Failed to clone repository"; exit 1; }
+            cd monsef-repo
             git checkout ci-cd-pipeline || { echo "Failed to checkout ci-cd-pipeline branch"; exit 1; }
             # Pull the latest image from ECR
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || { echo "Failed to pull ECR image"; exit 1; }
             # Stop and remove existing containers
             docker-compose down || true
             # Start the containers using the existing docker-compose.yml
-            docker-compose up -d --build || { echo "Failed to start containers"; exit 1; }
-            # Run the container directly as a fallback
-            docker stop churn-prediction || true
-            docker rm churn-prediction || true
-            docker run -d -p 80:8000 --name churn-prediction $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker-compose up -d || { echo "Failed to start containers"; exit 1; }
           EOF
           rm private_key.pem
