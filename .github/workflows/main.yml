@@ -1,0 +1,87 @@
+name: FastAPI SVM CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: churn-prediction
+  IMAGE_TAG: monsef992
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        cd app
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install httpx
+
+    - name: Check Python syntax
+      run: python -m py_compile app.py
+
+    - name: Run unit tests with pytest
+      run: pytest app/tests/
+
+    - name: Health check (basic)
+      run: |
+        uvicorn app:app --host 0.0.0.0 --port 8000 &
+        sleep 5
+        curl --fail http://localhost:8000/health || exit 1
+        pkill -f "uvicorn"
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        IMAGE_URI=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        docker build -t $IMAGE_URI .
+        docker push $IMAGE_URI
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH }}
+        script: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker stop churn-prediction || true
+          docker rm churn-prediction || true
+          docker run -d -p 80:8000 --name churn-prediction ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          
+          mkdir -p hesham
+          cd hesham
+          if [ ! -d "MLOps-Course-Labs" ]; then
+            git clone https://github.com/mohamed-abdelmonsef/MLOps-Course-Labs.git
+          else
+            cd MLOps-Course-Labs && git pull
+          fi
+          cd MLOps-Course-Labs
+          docker compose up -d --build
