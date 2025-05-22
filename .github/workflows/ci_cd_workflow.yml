@@ -1,4 +1,3 @@
-```yaml
 name: CI/CD Pipeline for Bank Churn Prediction API
 
 on:
@@ -117,4 +116,3 @@ jobs:
             docker-compose up -d
           EOF
           rm private_key.pem
-```
