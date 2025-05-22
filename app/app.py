@@ -7,6 +7,7 @@ from pathlib import Path
 import mlflow
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 
 # Setup logging
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Bank Churn Prediction API")
 # Middleware for logging requests
-instrumentator.instrument(app).expose(app, include_in_schema=False, should_gzip=True)
+Instrumentator().instrument(app).expose(app)
 
 # Load the trained model and transformer
 BASE_DIR = Path(__file__).resolve().parent / "models"
