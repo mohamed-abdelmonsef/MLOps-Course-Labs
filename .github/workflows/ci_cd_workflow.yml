@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - ci-cd-pipeline
-build-and-test:
+jobs:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository
@@ -55,3 +56,4 @@ build-and-test:
         with:
           files: app/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
+
