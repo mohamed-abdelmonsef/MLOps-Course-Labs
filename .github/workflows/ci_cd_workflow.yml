@@ -65,7 +65,7 @@ jobs:
       - name: Build and push Docker image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: churn-bank-prediction
+          ECR_REPOSITORY: churn-prediction
           IMAGE_TAG: monsef_992
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
