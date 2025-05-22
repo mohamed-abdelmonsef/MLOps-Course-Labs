@@ -130,3 +130,5 @@ jobs:
             docker-compose up -d || { echo "Failed to start containers"; exit 1; }
           EOF
           rm private_key.pem
+
+

@@ -2,7 +2,7 @@ services:
   api:
     build: app
     ports:
-      - 80:80
+      - 80:8000
 
   prometheus:
     image: prom/prometheus:latest
