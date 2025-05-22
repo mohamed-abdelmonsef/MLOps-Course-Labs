@@ -78,5 +78,5 @@ jobs:
           else
             cd MLOps-Course-Labs && git pull
           fi
-          cd MLOps-Course-Labs
+          cd MLOps-Course-Labs 
           docker compose up -d --build
